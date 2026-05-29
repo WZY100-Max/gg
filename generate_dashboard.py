@@ -112,4 +112,4 @@ fig.update_layout(
     legend_title_text='天气类型',
     annotations=[dict(text='总天数: 30天', x=1, y=-0.3, showarrow=False)]
 )
-fig.write_html('weather_trend.html')
+fig.write_html('index.html')
