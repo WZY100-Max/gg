@@ -1,0 +1,46 @@
+name: Update Weather Dashboard
+
+on:
+  # 每天 UTC 时间 8 点（北京时间 16:00）自动运行
+  schedule:
+    - cron: '0 8 * * *'
+  # 允许手动触发
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # 给工作流权限，让它能推送更新后的文件回仓库
+    permissions:
+      contents: write
+    steps:
+      # 1. 拉取仓库代码
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: main  # 你的分支名是 main
+
+      # 2. 设置 Python 环境
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'  # 可以改成你脚本用的版本
+
+      # 3. 安装依赖（如果你的脚本用到了 requests、pandas 之类的库，在这里安装）
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas matplotlib  # 按你的实际依赖添加
+
+      # 4. 运行你的天气脚本
+      - name: Run weather script
+        run: python generate_dashboard.py
+
+      # 5. 把脚本生成的文件（比如 index.html、图片）推回仓库
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "Auto-update weather dashboard" || echo "No changes to commit"
+          git push origin main
