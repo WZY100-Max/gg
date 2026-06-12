@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>江浙沪实时气温 - 高德底图（含农业提示）</title>
+    <link rel="stylesheet" href="static/leaflet.css" />
+    <script src="static/leaflet.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        #map { height: 600px; }
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        .legend {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            font-size: 12px;
+            z-index: 1000;
+            line-height: 1.5;
+        }
+        .legend span {
+            display: inline-block;
+            width: 20px;
+            height: 12px;
+            border-radius: 2px;
+            margin-right: 5px;
+        }
+        .back-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+            font-size: 14px;
+            z-index: 1000;
+            text-decoration: none;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <h2>📍 江浙沪实时气温（点击城市圆点看详情及农业建议）</h2>
+    <div id="map"></div>
+    <!-- 农业影响图例 -->
+    <div class="legend">
+        <strong>🌾 温度对作物影响</strong><br>
+        <span style="background:#1E90FF;"></span> &lt;10°C 低温冷害风险<br>
+        <span style="background:#FFD700;"></span> 10~20°C 多数作物适宜<br>
+        <span style="background:#FFA500;"></span> 20~30°C 喜温作物旺盛，需水分<br>
+        <span style="background:#FF4500;"></span> &gt;30°C 高温热害，注意灌溉
+    </div>
+    <a href="index.html" class="back-link">← 返回仪表盘</a>
+
+    <script>
+        // 初始化地图（高德底图，加载快、中文、兼容性好）
+        var map = L.map('map').setView([31.5, 121.0], 8);
+        L.tileLayer('http://webrd02.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+            attribution: '&copy; <a href="https://www.amap.com/">高德地图</a>',
+            subdomains: '0123',
+            maxZoom: 18
+        }).addTo(map);
+
+        // 限制地图范围（江浙沪区域）
+        var southWest = L.latLng(27.0, 115.0);
+        var northEast = L.latLng(35.0, 123.0);
+        var bounds = L.latLngBounds(southWest, northEast);
+        map.setMaxBounds(bounds);
+        map.on('drag', function() {
+            map.panInsideBounds(bounds, { animate: false });
+        });
+
+        // 天气代码转图标
+        function getWeatherIcon(code) {
+            if (code === undefined || code === null) return '🌡️';
+            if (code === 0) return '☀️';
+            if (code >= 1 && code <= 3) return '⛅';
+            if (code >= 51 && code <= 55) return '🌦️';
+            if (code >= 61 && code <= 65) return '🌧️';
+            if (code >= 71 && code <= 75) return '❄️';
+            if (code >= 95) return '⛈️';
+            return '🌡️';
+        }
+
+        // 根据城市和温度返回农业建议（主要作物参考当地特色）
+        function getAgriAdvice(cityName, temp) {
+            const crops = {
+                "杭州": "茶叶", "绍兴": "茶叶", "湖州": "茶叶", "丽水": "茶叶", "衢州": "茶叶",
+                "南京": "水稻", "苏州": "水稻", "无锡": "水稻", "常州": "水稻", "镇江": "水稻",
+                "扬州": "水稻", "泰州": "水稻", "南通": "水稻", "盐城": "棉花", "徐州": "小麦",
+                "连云港": "小麦", "淮安": "水稻", "宿迁": "水稻",
+                "上海": "蔬菜", "宁波": "柑橘", "台州": "柑橘", "温州": "杨梅", "嘉兴": "水稻",
+                "金华": "花卉/茶叶", "舟山": "水产（非种植）"
+            };
+            var mainCrop = crops[cityName] || "水稻/小麦";
+            
+            if (temp < 10) return `❄️ ${mainCrop}：温度低于10℃，注意防冻害，可覆盖地膜或熏烟增温。`;
+            if (temp >= 10 && temp < 20) return `✅ ${mainCrop}：当前温度适宜生长，正常管理。`;
+            if (temp >= 20 && temp < 28) return `🌱 ${mainCrop}：温度较高，生长加快，注意保持土壤湿润。`;
+            if (temp >= 28 && temp < 35) return `⚠️ ${mainCrop}：高温天气，建议午后遮阳、增加灌溉频率。`;
+            return `🔥 ${mainCrop}：极端高温！有热害风险，需紧急降温（如喷雾、通风）。`;
+        }
+
+        // 获取数据并绘制地图
+        fetch('https://wzylyt.pythonanywhere.com/weather/current')
+            .then(response => response.json())
+            .then(cities => {
+                cities.forEach(city => {
+                    console.log(city);
+                    if (city.temp === null) return;
+                    // 根据温度确定颜色
+                    var color;
+                    if (city.temp < 10) color = '#1E90FF';
+                    else if (city.temp < 20) color = '#FFD700';
+                    else if (city.temp < 30) color = '#FFA500';
+                    else color = '#FF4500';
+                    var radius = 10 + (city.temp / 5);
+                    // 创建圆点
+                    var marker = L.circleMarker([city.lat, city.lon], {
+                        radius: radius,
+                        fillColor: color,
+                        color: '#fff',
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    });
+                    // 生成农业提示文本
+                    var agriText = getAgriAdvice(city.city, city.temp);
+                    // 绑定弹窗
+                    var popupText = '<b>' + city.city + '</b><br>' +
+                                    getWeatherIcon(city.weather_code) + ' 温度: ' + city.temp + '°C<br>' +
+                                    '<span style="font-size:12px; color:#2c3e50;">🌾 ' + agriText + '</span>';
+                    marker.bindPopup(popupText);
+                    marker.addTo(map);
+                });
+            })
+            .catch(err => console.error('数据加载失败:', err));
+    </script>
+</body>
+</html>
