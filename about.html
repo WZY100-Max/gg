@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>项目说明 - 江浙沪天气监测与农业影响系统</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f9f9f9;
+            line-height: 1.6;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-left: 5px solid #2c3e50;
+            padding-left: 15px;
+        }
+        h2 {
+            color: #2c3e50;
+            margin-top: 0;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 8px;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            background: #2c3e50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            background: #1e2b36;
+            text-decoration: none;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: gray;
+            font-size: 14px;
+        }
+        ul, ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        li {
+            margin: 6px 0;
+        }
+        .tech-badge {
+            background: #ecf0f1;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: inline-block;
+            margin: 4px 4px 0 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>📊 江浙沪天气监测与农业影响系统</h1>
+    <p>一个完全自动化的天气数据分析平台，每日更新，展示过去30天天气分布、温度趋势、湿度与降雨关系，并提供未来7天温度/湿度预测。同时集成实时气温地图，针对江浙沪25个城市给出基于温度的农业种植建议。</p>
+</div>
+
+<div class="card">
+    <h2>📁 数据来源</h2>
+    <ul>
+        <li><a href="https://open-meteo.com/" target="_blank" >Open-Meteo 开源气象 API</a></li>
+    </ul>
+</div>
+
+
+<div class="card">
+    <h2>🛠️ 技术栈与库</h2>
+    <div>
+        <span class="tech-badge">Python 3.10</span>
+        <span class="tech-badge">Pandas</span>
+        <span class="tech-badge">NumPy</span>
+        <span class="tech-badge">Plotly</span>
+        <span class="tech-badge">statsmodels</span>
+        <span class="tech-badge">pmdarima (auto_arima)</span>
+        <span class="tech-badge">SARIMAX</span>
+        <span class="tech-badge">Flask</span>
+        <span class="tech-badge">Leaflet</span>
+        <span class="tech-badge">高德地图底图</span>
+        <span class="tech-badge">GitHub Actions</span>
+    </div>
+    <ul>
+        <li><strong>数据处理</strong>：Pandas 进行数据清洗、特征工程（平均温度、温差、天气简化、滞后变量）。</li>
+        <li><strong>可视化</strong>：Plotly 绘制交互式图表（饼图、折线图、柱状图、双轴图、预测图）。</li>
+        <li><strong>时间序列建模</strong>：
+            <ul>
+                <li>温度预测：ARIMA(2,1,3)。</li>
+                <li>相对湿度预测：SARIMAX(2,1,1) 引入外生变量（风速、降水量、晴天/雨天标志、前一天最高温），模型显著变量解释力强。</li>
+            </ul>
+        </li>
+        <li><strong>后端API</strong>：Flask  API（部署于 PythonAnywhere）并发获取 25 个城市实时天气数据；前端使用 Leaflet + 高德底图。</li>
+        <li><strong>自动化部署</strong>：GitHub Actions 每日定时执行脚本，生成静态 HTML，部署至 GitHub Pages / PythonAnywhere。</li>
+    </ul>
+</div>
+
+<div class="card">
+    <h2>📈 分析内容与业务价值</h2>
+    <ul>
+        <li><strong>过去30天天气分布</strong>：直观显示最近一个月的常见天气类型及占比，辅助农业安排（如雨天多注意排水）。</li>
+        <li><strong>过去30天温度趋势</strong>：展示最高/最低温变化，标注温差区间，提示极端温度事件。</li>
+        <li><strong>过去7天天气变化</strong>：每日最高/最低温及天气符号，方便快速了解短期波动。</li>
+        <li><strong>湿度与降雨</strong>：揭示降水与湿度的正相关关系，辅助判断霉变或灌溉需求。</li>
+        <li><strong>未来7天最低温预测</strong>：基于历史最低温序列的 ARIMA 预测，带95%置信区间，便于防霜冻准备。</li>
+        <li><strong>未来7天相对湿度预测</strong>：SARIMAX 模型利用外生变量（降水、风速、晴雨、昨日高温）给出更精准的湿度预测，并提供变量影响解释（例如：雨天湿度平均高4.8%，晴天低3.2%）。</li>
+        <li><strong>实时气温地图</strong>：Leaflet + 高德底图，展示25个城市实时温度，点击弹出农业建议（依据温度区间及当地主要作物：水稻、茶叶、柑橘、棉花等）。</li>
+    </ul>
+    <p>🎯 <strong>业务落地</strong>：所有温度区间的划分参考农业气象标准，直接给出可操作提示（如“午后遮阳”“增加灌溉”），助力种植决策。</p>
+</div>
+
+
+<div class="card">
+    <h2>🔗 相关链接</h2>
+    <ul>
+        <li><a href="index.html" target="_blank">📊 天气仪表盘（主页面）</a></li>
+        <li><a href="map.html" target="_blank">🗺️ 实时气温地图（含农业提示）</a></li>
+        <li><a href="https://github.com/你的用户名/你的仓库" target="_blank">📦 GitHub 仓库</a></li>
+    </ul>
+</div>
+
+<div class="card">
+    <h2>📝作者</h2>
+        <li>Wzy</li>
+    </ul>
+</div>
+
+<div style="text-align: center;">
+    <a href="index.html" class="back-link">← 返回仪表盘</a>
+</div>
+
+<footer>
+    项目完全开源 | 每日自动更新 | 构建于 2026.5.15-2026.6.10
+</footer>
+
+</body>
+</html>
